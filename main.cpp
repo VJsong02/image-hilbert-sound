@@ -11,20 +11,16 @@
 
 #define size (64)
 #define multiplier (8192.0 / (size * size))
-#define PI (3.141592653589793)
 #define TAU (6.283185307179586)
 #define verbose
 
 int xy2d(int n, int x, int y);
-void d2xy(int n, int d, int* x, int* y);
 void rot(int n, int* x, int* y, int rx, int ry);
 
 int main() {
 	std::ios_base::sync_with_stdio(false);
 	std::cin.tie(NULL);
 	omp_set_num_threads(omp_get_num_procs());
-
-	std::string str;
 
 	cv::VideoCapture in("input.mp4");
 	if (!in.isOpened()) { std::cout << "Error opening video stream or file" << std::endl; return -1; }
@@ -57,18 +53,23 @@ int main() {
 			frames = framecount;
 		}
 #endif
+		
 		cv::Mat frame, resized;
 		in.read(frame);
 		if (frame.empty()) break;
+		
 #ifdef verbose
 		cv::imshow("source", frame);
 #endif
+		
 		cv::cvtColor(frame, frame, cv::COLOR_BGR2GRAY);
 		cv::resize(frame, resized, cv::Size(), double(size) / frame.cols, (double)size / frame.rows, cv::INTER_AREA);
+		
 #ifdef verbose
 		cv::imshow("frame", resized);
 		cv::waitKey(1);
 #endif
+		
 		unsigned char pixels[size * size];
 		for (int y = 0; y < resized.cols; ++y)
 			for (int x = 0; x < resized.rows; ++x)
@@ -88,24 +89,17 @@ int main() {
 				audio[x] += amplitude * sin(freq * TAU * x / 44100.0);
 		}
 
-		double largest = 0, smallest = 0;
-		//for (double& f : audio)
-		//	if (f > largest) largest = f;
-		//	else if (f < smallest) smallest = f;
-		//std::cout << largest << " " << smallest << std::endl;
-
-		largest = size * size * 0.75;
-		// for (int i = 0; i < length; ++i)
-		// 	if (audio[i] > largest)
-		// 		largest = audio[i];
 		for (int i = 0; i < length; ++i)
-			audio[i] /= largest;
+			audio[i] /= size * size * 0.75;
 
 		for (double f : audio) output << f * 32767 << "\n";
 	}
 
 	in.release();
+	
+#ifdef verbose
 	cv::destroyAllWindows();
+#endif
 
 	file << output.str();
 	file.close();
@@ -121,20 +115,6 @@ int xy2d(int n, int x, int y) {
 		rot(n, &x, &y, rx, ry);
 	}
 	return d;
-}
-
-//convert d to (x,y)
-void d2xy(int n, int d, int* x, int* y) {
-	int rx, ry, s, t = d;
-	*x = *y = 0;
-	for (s = 1; s < n; s *= 2) {
-		rx = 1 & (t / 2);
-		ry = 1 & (t ^ rx);
-		rot(s, x, y, rx, ry);
-		*x += s * rx;
-		*y += s * ry;
-		t /= 4;
-	}
 }
 
 //rotate/flip a quadrant appropriately
