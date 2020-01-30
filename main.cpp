@@ -9,10 +9,11 @@
 #include <string>
 #include <sstream>
 
-#define size (64)
-#define multiplier (8192.0 / (size * size))
-#define TAU (6.283185307179586)
 #define verbose
+
+constexpr auto size = 32;
+constexpr auto TAU = 6.283185307179586;
+constexpr auto multiplier = 8192.0 / (size * size);
 
 int xy2d(int n, int x, int y);
 void rot(int n, int* x, int* y, int rx, int ry);
@@ -34,7 +35,7 @@ int main() {
 
 	double fps = in.get(CV_CAP_PROP_FPS);
 	double length = 44100 / fps;
-	int limit = 180 * fps;
+	int limit = 600 * fps;
 	if (limit > in.get(cv::CAP_PROP_FRAME_COUNT)) limit = in.get(cv::CAP_PROP_FRAME_COUNT);
 	std::cout << length << " " << limit << std::endl;
 
@@ -53,23 +54,23 @@ int main() {
 			frames = framecount;
 		}
 #endif
-		
+
 		cv::Mat frame, resized;
 		in.read(frame);
 		if (frame.empty()) break;
-		
+
 #ifdef verbose
 		cv::imshow("source", frame);
 #endif
-		
+
 		cv::cvtColor(frame, frame, cv::COLOR_BGR2GRAY);
 		cv::resize(frame, resized, cv::Size(), double(size) / frame.cols, (double)size / frame.rows, cv::INTER_AREA);
-		
+
 #ifdef verbose
 		cv::imshow("frame", resized);
 		cv::waitKey(1);
 #endif
-		
+
 		unsigned char pixels[size * size];
 		for (int y = 0; y < resized.cols; ++y)
 			for (int x = 0; x < resized.rows; ++x)
@@ -92,11 +93,11 @@ int main() {
 		for (int i = 0; i < length; ++i)
 			audio[i] /= size * size * 0.75;
 
-		for (double f : audio) output << f * 32767 << "\n";
+		for (double f : audio) output << (int)(f * 32767.0) << "\n";
 	}
 
 	in.release();
-	
+
 #ifdef verbose
 	cv::destroyAllWindows();
 #endif
@@ -105,7 +106,6 @@ int main() {
 	file.close();
 }
 
-//convert (x,y) to d
 int xy2d(int n, int x, int y) {
 	int rx, ry, s, d = 0;
 	for (s = n / 2; s > 0; s /= 2) {
@@ -117,7 +117,6 @@ int xy2d(int n, int x, int y) {
 	return d;
 }
 
-//rotate/flip a quadrant appropriately
 void rot(int n, int* x, int* y, int rx, int ry) {
 	if (ry == 0) {
 		if (rx == 1) {
@@ -125,7 +124,6 @@ void rot(int n, int* x, int* y, int rx, int ry) {
 			*y = n - 1 - *y;
 		}
 
-		//Swap x and y
 		int t = *x;
 		*x = *y;
 		*y = t;
