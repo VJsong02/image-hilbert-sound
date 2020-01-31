@@ -11,12 +11,13 @@
 
 #define verbose
 
-constexpr auto size = 32;
+constexpr auto size = 64;
 constexpr auto TAU = 6.283185307179586;
-constexpr auto multiplier = 8192.0 / (size * size);
+constexpr auto multiplier = 4096.0 / (size * size);
 
 int xy2d(int n, int x, int y);
 void rot(int n, int* x, int* y, int rx, int ry);
+void showprogress(int current, int max, int fps);
 
 int main() {
 	std::ios_base::sync_with_stdio(false);
@@ -35,7 +36,7 @@ int main() {
 
 	double fps = in.get(CV_CAP_PROP_FPS);
 	double length = 44100 / fps;
-	int limit = 600 * fps;
+	int limit = 120 * fps;
 	if (limit > in.get(cv::CAP_PROP_FRAME_COUNT)) limit = in.get(cv::CAP_PROP_FRAME_COUNT);
 	std::cout << length << " " << limit << std::endl;
 
@@ -49,7 +50,7 @@ int main() {
 	for (int framecount = 0; framecount < limit; ++framecount) {
 #ifdef verbose
 		if (std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::steady_clock::now() - t).count() >= 1) {
-			std::cout << framecount - frames << " fps" << std::endl;
+			showprogress(framecount, limit, framecount - frames);
 			t = std::chrono::steady_clock::now();
 			frames = framecount;
 		}
@@ -128,4 +129,13 @@ void rot(int n, int* x, int* y, int rx, int ry) {
 		*x = *y;
 		*y = t;
 	}
+}
+
+void showprogress(int current, int max, int fps) {
+	std::cout << "\r[";
+	for (int i = 0; i < current * 50 / max; ++i)
+		std::cout << "=";
+	for (int i = 0; i < 50 - current * 50 / max; ++i)
+		std::cout << " ";
+	std::cout << "] " << current * 100 / max << "% | " << fps << "fps";
 }
