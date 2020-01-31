@@ -1,6 +1,8 @@
-import struct
-import wave
+import os
 import progressbar
+import struct
+import subprocess
+import wave
 
 with open("dump.txt", "r") as data:
     output = wave.open("output.wav", "wb")
@@ -23,3 +25,6 @@ with open("dump.txt", "r") as data:
 
     output.writeframes(struct.pack('{}h'.format(len(audio)), *audio))
     output.close()
+
+    os.chdir(os.getcwd())
+    subprocess.call(['ffmpeg', '-hide_banner', '-loglevel', 'panic', '-i', 'input.mp4', '-i', 'output.wav', '-c:v', 'copy', '-map', '0:v:0', '-map', '1:a:0', 'mixed.mp4'])
